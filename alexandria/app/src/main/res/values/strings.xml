@@ -25,6 +25,21 @@
     <string name="back_button">go back</string>
     <string name="share_text">A must read book: </string>
 
+    <!--NavigationDrawerFragment Strings-->
+    <string name="start_fragment_pref_key" translatable="false">pref_startFragment</string>
+    <string name="start_fragment_pref_default" translatable="false">0</string>
+
+    <!--MainActivity Strings-->
+    <string name="main_activity_back_stack">Book Detail</string>
+
+    <!--AddBook Activity Strings-->
+    <string name="intent_to_scan_activity">INTENT_TO_SCAN_ACTIVITY</string>
+
+    <string name="empty_view_string">There are no books available.</string>
+    <string name="network_not_available">The network is currently not available.  Please try again later.</string>
+    <string name="book_prefix" translatable="false">978</string>
+
+
 <!-- TODO: Remove or change this placeholder text -->
     <string name="about_text">This application gets book information from a Google API. All titles, cover images, and author information come from there.
     The original version of this app was built by Sascha Jaschke, and a modified version is given to students in the Udacity Android Nanodegree program. </string>
@@ -43,5 +58,6 @@
     <string name="barcode_success">Barcode read successfully</string>
     <string name="barcode_failure">No barcode captured</string>
     <string name="barcode_error">"Error reading barcode: %1$s"</string>
+
 
 </resources>

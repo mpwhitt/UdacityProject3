@@ -1,12 +1,14 @@
 package it.jaschke.alexandria;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -32,7 +34,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private EditText ean;
     private final int LOADER_ID = 1;
     private View rootView;
-    private final String EAN_CONTENT="eanContent";
+    private final String EAN_CONTENT = "eanContent";
     private static final String SCAN_FORMAT = "scanFormat";
     private static final String SCAN_CONTENTS = "scanContents";
 
@@ -58,25 +60,31 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         rootView = inflater.inflate(R.layout.fragment_add_book, container, false);
         ean = (EditText) rootView.findViewById(R.id.ean);
 
-        ean.addTextChangedListener(new TextWatcher() {
+        ean.addTextChangedListener(new TextWatcher()
+        {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after)
+            {
                 //no need
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            public void onTextChanged(CharSequence s, int start, int before, int count)
+            {
                 //no need
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-                String ean =s.toString();
+            public void afterTextChanged(Editable s)
+            {
+                String ean = s.toString();
                 //catch isbn10 numbers
-                if(ean.length()==10 && !ean.startsWith("978")){
-                    ean="978"+ean;
+                if (ean.length() == 10 && !ean.startsWith(getString(R.string.book_prefix)))
+                {
+                    ean = getString(R.string.book_prefix) + ean;
                 }
-                if(ean.length()<13){
+                if (ean.length() < 13)
+                {
                     clearFields();
                     return;
                 }
@@ -85,19 +93,30 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             }
         });
 
-        rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener() {
+        rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(getActivity(), BarcodeCaptureActivity.class);
-                intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
-                intent.putExtra(BarcodeCaptureActivity.UseFlash, true);
-                startActivityForResult(intent, RC_BARCODE_CAPTURE);
+            public void onClick(View v)
+            {
+                if (Utility.isNetworkAvailable(getActivity()))
+                {
+                    Intent intent = new Intent(getActivity(), BarcodeCaptureActivity.class);
+                    intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
+                    intent.putExtra(BarcodeCaptureActivity.UseFlash, true);
+                    startActivityForResult(intent, RC_BARCODE_CAPTURE);
+                }
+                else
+                {
+                    showNetworkNotAvailableDialog();
+                }
             }
         });
 
-        rootView.findViewById(R.id.save_button).setOnClickListener(new View.OnClickListener() {
+        rootView.findViewById(R.id.save_button).setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View view) {
+            public void onClick(View view)
+            {
                 ean.setText("");
             }
         });
@@ -125,11 +144,34 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     private void addBook(String ean)
     {
-        Intent bookIntent = new Intent(getActivity(), BookService.class);
-        bookIntent.putExtra(BookService.EAN, ean);
-        bookIntent.setAction(BookService.FETCH_BOOK);
-        getActivity().startService(bookIntent);
-        AddBook.this.restartLoader();
+        if (Utility.isNetworkAvailable(getActivity()))
+        {
+            Intent bookIntent = new Intent(getActivity(), BookService.class);
+            bookIntent.putExtra(BookService.EAN, ean);
+            bookIntent.setAction(BookService.FETCH_BOOK);
+            getActivity().startService(bookIntent);
+            AddBook.this.restartLoader();
+        }
+        else
+        {
+            showNetworkNotAvailableDialog();
+        }
+    }
+
+    private void showNetworkNotAvailableDialog()
+    {
+        //Show the user a dialog informing them that the network is not currently available.
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage(R.string.network_not_available)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener()
+                {
+                    public void onClick(DialogInterface dialog, int id)
+                    {
+                        //Dismiss
+                    }
+                });
+        // Create the AlertDialog object and return it
+        builder.create().show();
     }
 
     private void restartLoader(){
@@ -138,12 +180,12 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     @Override
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        if(ean.getText().length()==0){
+        if(ean.getText().length() == 0){
             return null;
         }
         String eanStr= ean.getText().toString();
-        if(eanStr.length()==10 && !eanStr.startsWith("978")){
-            eanStr="978"+eanStr;
+        if(eanStr.length() == 10 && !eanStr.startsWith(getString(R.string.book_prefix))){
+            eanStr = getString(R.string.book_prefix) + eanStr;
         }
         return new CursorLoader(
                 getActivity(),
@@ -233,15 +275,9 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             if (resultCode == CommonStatusCodes.SUCCESS) {
                 if (data != null) {
                     Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
+                    ean.setText(barcode.displayValue);
                     addBook(barcode.displayValue);
-                    Log.d(TAG, "Barcode read: " + barcode.displayValue);
-                } else {
-                    //statusMessage.setText(R.string.barcode_failure);
-                    Log.d(TAG, "No barcode captured, intent data is null");
                 }
-            } else {
-                //statusMessage.setText(String.format(getString(R.string.barcode_error),
-                        //CommonStatusCodes.getStatusCodeString(resultCode)));
             }
         }
         else {
