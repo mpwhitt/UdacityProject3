@@ -1,6 +1,7 @@
 package barqsoft.footballscores;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -25,6 +26,9 @@ public class MainActivity extends ActionBarActivity
                     .add(R.id.container, my_main)
                     .commit();
         }
+
+
+
     }
 
 
